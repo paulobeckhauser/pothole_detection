@@ -1,0 +1,3 @@
+output/*
+job_script.sh
+.venv/
