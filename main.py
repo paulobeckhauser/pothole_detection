@@ -11,9 +11,12 @@ def main():
     # ------------ TASK 2 ------------
     # Selective Search
     resize_dim = (400, 400)
-    selective_search = SelectiveSearch(input_folder='images', output_folder='new_ss_images',
+    selective_search = SelectiveSearch(input_folder='images', output_folder='ss_images',
         resize_dim=resize_dim, mode='fast')
     selective_search.process_all_images()
+
+    # Edge Boxes
+    
 
 if __name__ == "__main__":
     main()
