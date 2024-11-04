@@ -3,3 +3,5 @@ Output*
 job_script.sh
 .venv/
 __pycache__/*
+bounding_boxes_images/*
+rm_outputs.sh
