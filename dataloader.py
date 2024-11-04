@@ -32,7 +32,7 @@ class DataLoader:
         cv2.imwrite(output_path, image)
 
 
-    def load_dataset(self, data_folder='annotated_images', output_folder = 'output'):
+    def load_dataset(self, data_folder='images', output_folder = 'annotated_images'):
         # Create output folder if not exist yet
         os.makedirs(output_folder, exist_ok=True)
         # Iterate through the folder and find pairs of image and XML files

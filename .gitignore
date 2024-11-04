@@ -1,4 +1,4 @@
-output/*
+annotated_images/*
 Output*
 job_script.sh
 .venv/
