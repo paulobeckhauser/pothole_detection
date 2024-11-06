@@ -28,9 +28,9 @@ class GroundTruthBoundingBoxes:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         for (xmin, ymin, xmax, ymax) in bboxes:
             cv2.rectangle(image, (xmin, ymin), (xmax, ymax), color=(255, 0, 0), thickness=2)
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # Convert back to BGR before saving
         # Save the image with bounding boxes to the output folder
         cv2.imwrite(output_path, image)
-
 
     def load_dataset(self, data_folder='images', output_folder = 'annotated_images'):
         # Create output folder if not exist yet

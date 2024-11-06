@@ -5,3 +5,4 @@ job_script.sh
 __pycache__/*
 bounding_boxes_images/*
 rm_outputs.sh
+ss_images/
