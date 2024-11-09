@@ -3,6 +3,7 @@ from selective_search import SelectiveSearch
 import os
 import cv2
 import xml.etree.ElementTree as ET
+import re
 
 def resize_bounding_boxes(bounding_boxes, original_size, new_size):
     x_scale = new_size[0] / original_size[0]
@@ -104,66 +105,134 @@ def count_xml_files(folder_path):
     xml_files = [f for f in os.listdir(folder_path) if f.lower().endswith('.xml')]
     return len(xml_files)
 
+def extract_number_from_string(s):
+    match = re.search(r'\d+', s)
+    if match:
+        return int(match.group())
+    return None
+
 def main():
 
     # ------------ TASK 1 ------------
     # gt_bound_box = GroundTruthBoundingBoxes(name="Data Loader")
     # gt_bound_box.load_dataset(data_folder='images', output_folder = 'bounding_boxes_images')
 
-    # ------------ TASK 2 ------------
-    # Selective Search
+    # # ------------ TASK 2 ------------
+    # # Selective Search
     # resize_dim = (400, 400)
     # nb_boxes_list = [5, 10, 20, 50, 100, 200, 500, 100, 1500, 2000, 2500, 3000]
     # selective_search = SelectiveSearch(input_folder='images', output_folder='ss_images', resize_dim=resize_dim, mode='fast')
     # selective_search.process_all_images(nb_boxes_list=nb_boxes_list)
 
     mabo_results = []
+    nb_boxes = []
     max_iou_results = []
     original_size = (720, 720)
     new_size = (400, 400)
 
     ground_truth_folder = 'images'
-    selective_search_folder_5_boxes = 'ss_images/5_boxes'
+    # selective_search_folder_5_boxes = 'ss_images/5_boxes'
+    ss_images_folder = 'ss_images'
 
-    images_folder_len = count_xml_files(ground_truth_folder)
-    selective_search_folder_5_boxes_len = count_xml_files('ss_images/5_boxes/')
-
-    
-    i = 1
-    while i <= images_folder_len:
-        image_folder = f'{selective_search_folder_5_boxes}/img-{i}.xml'
-        b_box_path = f'images/img-{i}.xml'
-        print(image_folder)
-
-        if not os.path.exists(image_folder) or not os.path.exists(b_box_path):
-            i += 1
+    # Iterate over all subfolders in ss_images
+    for subfolder in os.listdir(ss_images_folder):
+        nb_boxes_str = extract_number_from_string(subfolder)
+        nb_boxes.append(nb_boxes_str)
+        selective_search_folder = os.path.join(ss_images_folder, subfolder)
+        if not os.path.isdir(selective_search_folder):
             continue
 
-        bd_result_ss = load_bounding_boxes_from_xml(image_folder)
-        bd_g_box = parse_annotation(b_box_path)
-        resized_boxes = resize_bounding_boxes(bd_g_box, original_size, new_size)
-    
-        iou = []
-        for element in bd_result_ss:
-            iou_list = calculate_iou(element, resized_boxes[0])
-            iou.append(iou_list)
+        images_folder_len = count_xml_files(ground_truth_folder)
+        print(f"Number of .xml files in '{ground_truth_folder}': {images_folder_len}")
 
-        iou_max = max(iou)
-        max_iou_results.append(iou_max)
+        max_iou_results = []
+        i = 1
+        while i <= images_folder_len:
+            image_folder = f'{selective_search_folder}/img-{i}.xml'
+            b_box_path = f'images/img-{i}.xml'
+            print(image_folder)
 
-        i += 1
+            if not os.path.exists(image_folder) or not os.path.exists(b_box_path):
+                i += 1
+                continue
 
-    print(max_iou_results)
+            bd_result_ss = load_bounding_boxes_from_xml(image_folder)
+            bd_g_box = parse_annotation(b_box_path)
+            resized_boxes = resize_bounding_boxes(bd_g_box, original_size, new_size)
+
+            iou = []
+            for element in bd_result_ss:
+                iou_list = calculate_iou(element, resized_boxes[0])
+                iou.append(iou_list)
+
+            iou_max = max(iou)
+            max_iou_results.append(iou_max)
+
+            i += 1
+
+        print(max_iou_results)
         # Calculate the average of max_iou_results
-    if max_iou_results:
-        average_max_iou_results = sum(max_iou_results) / len(max_iou_results)
-        mabo_results.append(average_max_iou_results)
-        print(f"Average MABO: {average_max_iou_results}")
-    else:
-        print("No MABO results to average.")
+        if max_iou_results:
+            average_max_iou_results = sum(max_iou_results) / len(max_iou_results)
+            mabo_results.append(average_max_iou_results)
+            print(f"Average MABO for {subfolder}: {average_max_iou_results}")
+        else:
+            print(f"No MABO results to average for {subfolder}.")
+
+    print(f"MABO results: {mabo_results}")
+    print(f"Number boxes: {nb_boxes}")
+
+    # Pair the elements from both lists
+    paired_results = list(zip(nb_boxes, mabo_results))
+
+    # Save results to a text file
+    with open('mabo_results.txt', 'w') as file:
+        file.write(f"MABO results: {mabo_results}\n")
+        file.write(f"Number boxes: {nb_boxes}\n")
 
     
-    print(f"MABO results: {mabo_results}")
+        
+
+
+    # images_folder_len = count_xml_files(ground_truth_folder)
+    # selective_search_folder_5_boxes_len = count_xml_files('ss_images/5_boxes/')
+
+    
+    # i = 1
+    # while i <= images_folder_len:
+    #     image_folder = f'{selective_search_folder_5_boxes}/img-{i}.xml'
+    #     b_box_path = f'images/img-{i}.xml'
+    #     print(image_folder)
+
+    #     if not os.path.exists(image_folder) or not os.path.exists(b_box_path):
+    #         i += 1
+    #         continue
+
+    #     bd_result_ss = load_bounding_boxes_from_xml(image_folder)
+    #     bd_g_box = parse_annotation(b_box_path)
+    #     resized_boxes = resize_bounding_boxes(bd_g_box, original_size, new_size)
+    
+    #     iou = []
+    #     for element in bd_result_ss:
+    #         iou_list = calculate_iou(element, resized_boxes[0])
+    #         iou.append(iou_list)
+
+    #     iou_max = max(iou)
+    #     max_iou_results.append(iou_max)
+
+    #     i += 1
+
+    # print(max_iou_results)
+    #     # Calculate the average of max_iou_results
+    # if max_iou_results:
+    #     average_max_iou_results = sum(max_iou_results) / len(max_iou_results)
+    #     mabo_results.append(average_max_iou_results)
+    #     print(f"Average MABO: {average_max_iou_results}")
+    # else:
+    #     print("No MABO results to average.")
+
+    
+    # print(f"MABO results: {mabo_results}")
 
  
 
