@@ -10,10 +10,12 @@ from create_dataset import split_images_train_validation_test, put_images_and_la
 
 
 def main():
+    # set working directory
+    os.chdir('pothole_detection')
+
     os.makedirs('results', exist_ok=True)
-
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+    '''
     # ------------ TASK 1 ------------
     gt_bound_box = GroundTruthBoundingBoxes(name="Data Loader")
     gt_bound_box.load_dataset(data_folder='images', output_folder = 'bounding_boxes_images') # edit the path
@@ -27,7 +29,7 @@ def main():
     selective_search.process_all_images()
 
     # Edge Boxes
-
+    '''
     # ------------ TASK 3 ------------
     # MABO for one image ss
     gt_bound_box = GroundTruthBoundingBoxes(name="Data Loader")
