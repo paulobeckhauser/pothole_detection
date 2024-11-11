@@ -6,3 +6,4 @@ __pycache__/*
 bounding_boxes_images/*
 rm_outputs.sh
 data/*
+results/*
