@@ -1,5 +1,6 @@
 import cv2
 import os
+import torch
 
 
 class SelectiveSearch:
@@ -9,21 +10,17 @@ class SelectiveSearch:
         self.resize_dim = resize_dim
         self.mode = mode.lower()
         os.makedirs(self.output_folder, exist_ok=True)
-
     
-    def run_selective_search(self, image_path):
+    def create_proposals(self, image_path, device):
         # Load the image
         image = cv2.imread(image_path)
         if image is None:
             print(f"Error loading image: {image_path}")
             return None, None
 
-        # Resize the image for efficiency
-        image_resized = cv2.resize(image, self.resize_dim)
-
         # Initialize Selective Search
         ss = cv2.ximgproc.segmentation.createSelectiveSearchSegmentation()
-        ss.setBaseImage(image_resized)
+        ss.setBaseImage(image)
 
         # Set mode
         if self.mode == 'fast':
@@ -35,13 +32,14 @@ class SelectiveSearch:
         
         # Run Selective Search
         rects = ss.process()
-        return image_resized, rects
+        rects = torch.tensor(rects, dtype=torch.float32).to(device)
+        return image, rects
 
     def process_all_images(self):
         for filename in os.listdir(self.input_folder):
             if filename.lower().endswith(('.jpg', 'jpeg', '.png')): # Filter for image files
                 image_path = os.path.join(self.input_folder, filename)
-                image_resized, proposals = self.run_selective_search(image_path)
+                image_resized, proposals = self.create_proposals(image_path)
 
                 if image_resized is not None:
                     # Draw the first 100 proposals for visualization

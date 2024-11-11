@@ -29,13 +29,19 @@ class GroundTruthBoundingBoxes:
         for (xmin, ymin, xmax, ymax) in bboxes:
             cv2.rectangle(image, (xmin, ymin), (xmax, ymax), color=(255, 0, 0), thickness=2)
         # Save the image with bounding boxes to the output folder
-        cv2.imwrite(output_path, image)
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        if output_path is not None:
+            cv2.imwrite(output_path, image)
+        else:
+            # convert to a numpy and return'
+            return image
 
 
     def load_dataset(self, data_folder='images', output_folder = 'annotated_images'):
         # Create output folder if not exist yet
         os.makedirs(output_folder, exist_ok=True)
         # Iterate through the folder and find pairs of image and XML files
+        print(len(os.listdir(data_folder)))
         for filename in os.listdir(data_folder):
             if filename.endswith('.xml'):
                 image_name = filename.replace('.xml', '.jpg') # Change the extension to match image file
