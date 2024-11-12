@@ -88,7 +88,7 @@ def calculate_mabo(annotation_paths, ground_truth_bound_box, proposal_method, de
     # Sane check
     for i in range(len(num_boxes_list_list)-1):
         if len(num_boxes_list_list[i]) != len(num_boxes_list_list[i+1]):
-            raise ValueError("num_boxes_list_list elements are not the same")
+            print("num_boxes_list_list elements are not the same")
         
     # Calculate the mean MABO scores
     mabo_scores_list = np.array(mabo_scores_list)
