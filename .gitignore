@@ -7,3 +7,5 @@ bounding_boxes_images/*
 rm_outputs.sh
 data/*
 results/*
+ss_images/*
+submit.sh
