@@ -7,25 +7,30 @@ from support import *
 # from support import iou, mean_average_best_overlap, plot_mabo_vs_boxes
 # from support import convert_boxes, calculate_mabo
 from create_dataset import split_images_train_validation_test, put_images_and_labels_in_folders
+from dataloader import get_dataloaders
+from network import Network
+from trainer import trainer, plot_loss_accuracy
+from test_detector import test_object_detection
 
 
 
 def main():
+    #os.chdir('pothole_detection')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     # # ------------ TASK 1 ------------
-    # os.makedirs('results', exist_ok=True)
-    # gt_bound_box = GroundTruthBoundingBoxes(name="Data Loader")
-    # gt_bound_box.load_dataset(data_folder='images', output_folder = 'bounding_boxes_images') # edit the path
-    # print("Loaded dataset")
+    os.makedirs('results', exist_ok=True)
+    gt_bound_box = GroundTruthBoundingBoxes(name="Data Loader")
+    gt_bound_box.load_dataset(data_folder='images', output_folder = 'bounding_boxes_images') # edit the path
+    print("Loaded dataset")
 
     
-    # # ------------ TASK 2 ------------
-    # # Selective Search
-    # resize_dim = (400, 400)
-    # selective_search = SelectiveSearch(input_folder='images', output_folder='ss_images',
-    #                                    resize_dim=resize_dim, mode='fast') # edit the path
-    # selective_search.process_all_images(device=device)
+    # ------------ TASK 2 ------------
+    # Selective Search
+    resize_dim = (400, 400)
+    selective_search = SelectiveSearch(input_folder='images', output_folder='ss_images',
+                                       resize_dim=resize_dim, mode='fast') # edit the path
+    selective_search.process_all_images(device=device)
 
     # Edge Boxes
     
@@ -59,17 +64,30 @@ def main():
     # print(mabo_score)
     # plot_mabo_vs_boxes(bb, proposals, save_path='results/mabo_vs_boxes.png') # edit the path
 
-    # # ------------ TASK 4 ------------
-    # # get all image paths
-    # image_paths = glob.glob('images/*.jpg') # edit the path
+    # ------------ TASK 4 ------------
+    # get all image paths
+    image_paths = glob.glob('images/*.jpg') # edit the path
 
-    # # split the dataset
-    # train_images, validation_images, test_images, train_anno, validation_anno, test_anno = split_images_train_validation_test(image_paths, 
-    #                                                                                                                           train_ratio=0.8, validation_ratio=0.1, 
-    #                                                                                                                           test_ratio=0.1, 
-    #                                                                                                                           save_path='results/train_validation_test.png') # edit the path 
+    # split the dataset
+    train_images, validation_images, test_images, train_anno, validation_anno, test_anno = split_images_train_validation_test(image_paths, 
+                                                                                                                            train_ratio=0.8, validation_ratio=0.1, 
+                                                                                                                          test_ratio=0.1, 
+                                                                                                                            save_path='results/train_validation_test.png') # edit the path 
 
-    # put_images_and_labels_in_folders(train_images, validation_images, train_anno, validation_anno, base_folder='data', GTBB = gt_bound_box, bb = SS, limit=None)
+    put_images_and_labels_in_folders(train_images, validation_images, train_anno, validation_anno, base_folder='data', GTBB = groundtruth_bound_box, bb = SS, limit=None)
+    
+    # ------------ TASK 5-8 ------------
+    network = Network(size=128, num_channels=3, batch_size=64, out_channels=32).to(device)
+    optimizer = torch.optim.Adam(network.parameters(), lr=0.001)
+    train_loader, val_loader = get_dataloaders(train_dir = 'data/train', val_dir='data/validation', batch_size=64, num_workers=4)
+    out_dict = trainer(network, optimizer, train_loader, val_loader, num_epochs=10, lr=0.001, device=device)
+    plot_loss_accuracy(out_dict)
+
+    # ------------ TASK 9 ------------
+    NMS = None # edit
+    test_object_detection_model=test_object_detection(test_files_path=None, network=network, search_method=SS, ground_truth_boxes=groundtruth_bound_box, convert_box=convert_boxes, iou=iou, NMS=NMS)
+    AP = test_object_detection_model.test_all_images(test_files_path=test_images)
+    print(f'Average Precision: {AP}')
 
 
     
