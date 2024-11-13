@@ -1,35 +1,55 @@
 import torch
-
+import os
+from PIL import Image
+from torch.utils.data import Dataset, DataLoader
+from torchvision import transforms
+import cv2
+import numpy as np
 
 class test_object_detection:
 
     def __init__(self, test_files_path, network, search_method, ground_truth_boxes, convert_box, iou, NMS, iou_threshold=0.5, device='cpu'):
         self.name = test_files_path
-        self.network = network
+        self.network = network.to(device)
         self.search_method = search_method
         self.ground_truth_boxes = ground_truth_boxes
         self.convert_box = convert_box
         self.iou = iou
         self.NMS = NMS
         self.device = device
+        self.transform = transforms.Compose([
+            transforms.Resize((128, 128)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5263633, 0.5145254, 0.49127004], std=[0.16789266, 0.16256736, 0.1608751])
+        ])
+        self.network.eval()
 
     def create_proposals_and_ground_truth(self, image_path):
         image, proposals = self.search_method.create_proposals(image_path, self.device)
         proposals = self.convert_box(proposals)
-        annotation_path = image_path.replace('images', 'bounding_boxes_images').replace('.jpg', '.xml')
+        annotation_path = image_path.replace('.jpg', '.xml')
         ground_truth_boxes = self.ground_truth_boxes.parse_annotation(annotation_path)
         return image, proposals, ground_truth_boxes
     
-    def precision_recall(self, predicted_boxes, ground_truth_boxes, confidense, iou_threshold=0.5):
-
+    def precision_recall(self, predicted_boxes, ground_truth_boxes, confidense, index_predicted, index_groundtruth, iou_threshold=0.5):
         sorted_indices = torch.argsort(confidense, descending=True)
         predicted_boxes = predicted_boxes[sorted_indices]
+        index_predicted = index_predicted[sorted_indices]
+
         true_positives = torch.zeros(len(predicted_boxes)).to(self.device)
         false_positives = torch.zeros(len(predicted_boxes)).to(self.device)
 
         for i, predicted_box in enumerate(predicted_boxes):
+
+            # get image
+            image_index = index_predicted[i]
+            mask = (index_groundtruth == image_index)
+            # get ground truth boxes for the image
+            print(ground_truth_boxes.shape)
+            ground_truth_boxes_image = ground_truth_boxes[mask]
+            print(ground_truth_boxes_image)
             
-            for ground_truth_box in ground_truth_boxes:
+            for ground_truth_box in ground_truth_boxes_image:
                 iou = self.iou(predicted_box, ground_truth_box)
                 if iou > iou_threshold:
                     # remove the ground truth box
@@ -60,34 +80,61 @@ class test_object_detection:
                 
     
     def test_all_images(self, test_files_path):
-        avarage_precision = []
-        for image_path in test_files_path:
-            image, proposals, ground_truth_boxes = self.create_proposals_and_ground_truth(image_path)
-            image = image.to(self.device)
-            proposals = proposals.to(self.device)
+        with torch.no_grad():
+            # Initialize tensors
+            image_box_tensor = []
+            proposals_list = []
+            confidense_tensor = []
+            ground_truth_boxes_list = []
+            ground_truth_boxes_image = []
 
-            # crop image
-            cropepd_images = torch.zeros(len(proposals), 3, 128, 128)
-            for i, proposal in enumerate(proposals):
-                xmin, ymin, xmax, ymax = proposal
-                cropped_image = image[:, :, ymin:ymax, xmin:xmax]
-                cropepd_images[i] = cropped_image
+            for i, image_path in enumerate(test_files_path):
+                image, proposals, ground_truth_boxes = self.create_proposals_and_ground_truth(image_path)
+                
+                # Crop images
+                cropped_images = torch.zeros(len(proposals), 3, 128, 128).to(self.device)
+                for j, proposal in enumerate(proposals):
+                    xmin, ymin, xmax, ymax = map(int, proposal)
+                    crop = image[ymin:ymax, xmin:xmax]
+                    crop_pil = Image.fromarray(crop)
+                    cropped_image = self.transform(crop_pil)
+                    cropped_images[j] = cropped_image.to(self.device)
 
-            # predict
-            outputs = self.network(cropepd_images)
-            confidense = outputs.squeeze()
-            confidense = confidense.cpu().detach().numpy()
-            predicted_boxes = proposals[confidense > 0.5]
+                
+                confidense = torch.zeros(len(proposals)).to(self.device)
+                # Predict in batches of 64
+                
+                outputs = self.network(cropped_images)
+                confidense = outputs[:, 0]
+                
+                # Run NMS
+                predicted_boxes, confidense = self.NMS(proposals, confidense, iou_threshold=0.2)
+        
+                # Update tensors
+                for j in range(len(confidense)):
+                    image_box_tensor.append(i)
+                    proposals_tensor = predicted_boxes[j].view(1, -1)
+                    print(proposals_tensor)
+                    proposals_list.append(proposals_tensor)
+                    print(confidense[j])
+                    confidense_tensor.append(confidense[j])
+                
+                for j in range(len(ground_truth_boxes)):
+                    ground_truth_boxes_image.append(i)
+                    ground_truth_boxes_list.append(ground_truth_boxes[j])
+                
+                # Clear unused variables
+                del cropped_images, outputs, confidense, predicted_boxes
+            
+            # Calculate precision and recall
+            precision, recall = self.precision_recall(proposals_list, ground_truth_boxes_list, confidense_tensor, image_box_tensor, ground_truth_boxes_image)
+            self.plot_precision_recall(precision, recall)
+            AP = self.avarage_precision(precision, recall)
 
-            # run NMS
-            predicted_boxes = self.NMS(predicted_boxes, confidense)
-
-            # calculate avarage precision
-            precision, recall = self.precision_recall(predicted_boxes, ground_truth_boxes, confidense)
-            AP =  self.avarage_precision(precision, recall)
-            avarage_precision.append(AP)
-        AP = torch.mean(torch.tensor(avarage_precision))
         return AP
+    
+    def plot_precision_recall(self, precision, recall):
+        pass
     
 if __name__ == '__main__':
 

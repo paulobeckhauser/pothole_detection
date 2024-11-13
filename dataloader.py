@@ -56,7 +56,7 @@ def get_dataloaders(train_dir, val_dir, batch_size=64, num_workers=4):
     ])
 
     val_transform = transforms.Compose([
-        transforms.Resize((128, 129)),
+        transforms.Resize((128, 128)),
         transforms.ToTensor()
     ])
 
