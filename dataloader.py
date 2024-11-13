@@ -3,6 +3,7 @@ from PIL import Image
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
+import random
 
 class PotholeDataset(Dataset):
     def __init__(self, root_dir, transform=None):
@@ -30,6 +31,7 @@ class PotholeDataset(Dataset):
                 self.image_paths += [os.path.join(background_dir, img) for img in os.listdir(background_dir)]
                 self.labels += [0] * len(os.listdir(background_dir))
 
+        
     def __len__(self):
         return len(self.image_paths)
 
@@ -63,7 +65,7 @@ def get_dataloaders(train_dir, val_dir, batch_size=64, num_workers=4):
     val_dataset = PotholeDataset(root_dir=val_dir, transform=val_transform)
 
     # Create dataloaders
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
     return train_loader, val_loader
@@ -72,7 +74,7 @@ def get_dataloaders(train_dir, val_dir, batch_size=64, num_workers=4):
 if __name__ == "__main__":
     train_dir = "/work3/s214598/pothole_detection/data/train"
     val_dir = "/work3/s214598/pothole_detection/data/validation"
-    batch_size = 32
+    batch_size = 64
 
     train_loader, val_loader = get_dataloaders(train_dir, val_dir, batch_size=batch_size)
 
