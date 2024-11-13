@@ -5,6 +5,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 
 class test_object_detection:
 
@@ -133,11 +134,25 @@ class test_object_detection:
             self.plot_precision_recall(precision, recall)
             AP = self.avarage_precision(precision, recall)
 
+            print("precision", precision)
+            print("recall", recall)
+
         return AP
     
     def plot_precision_recall(self, precision, recall):
-        pass
+        plt.clf() # clear plot
+        plt.plot(recall, precision, color='b')
+        plt.scatter(recall, precision, color='b')
+        plt.xlabel('Recall')
+        plt.ylabel('Precision')
+        plt.xlim([0, 1.001])
+        plt.ylim([0, 1.001])
+        plt.grid()
+        plt.title('Precision-Recall Curve')
+        plt.savefig('results/pr_curve.png')
+        plt.show()
     
+
 if __name__ == '__main__':
 
     test_object_detection = test_object_detection(test_files_path=None, network=None, search_method=None, ground_truth_boxes=None, convert_box=None, iou=None, NMS=None) 

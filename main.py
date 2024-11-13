@@ -16,6 +16,9 @@ from torchvision import transforms
 
 
 def main():
+    # set torch seed
+    torch.manual_seed(0)
+
     # os.chdir('pothole_detection')
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -49,18 +52,18 @@ def main():
     SS = SelectiveSearch(input_folder='images', output_folder='ss_images',
                          resize_dim=(600, 600), mode='quality') # edit the path
     
-    annotation_paths = glob.glob('images/*.xml') # list all xml files
+    # annotation_paths = glob.glob('images/*.xml') # list all xml files
     
-    # MABO
-    n_boxes_list, mabo = calculate_mabo(annotation_paths=annotation_paths, 
-                                        ground_truth_bound_box=groundtruth_bound_box, 
-                                        proposal_method=SS, 
-                                        device=device,
-                                        max_runs=None,
-                                        do_plotting=True)
+    # # MABO
+    # n_boxes_list, mabo = calculate_mabo(annotation_paths=annotation_paths, 
+    #                                     ground_truth_bound_box=groundtruth_bound_box, 
+    #                                     proposal_method=SS, 
+    #                                     device=device,
+    #                                     max_runs=None,
+    #                                     do_plotting=True)
     
-    print("Final n_boxes_list", n_boxes_list)
-    print("Final mabo", mabo)
+    # print("Final n_boxes_list", n_boxes_list)
+    # print("Final mabo", mabo)
 
 
 
@@ -77,6 +80,9 @@ def main():
     # ------------ TASK 4 ------------
     # get all image paths
     image_paths = glob.glob('images/*.jpg') # edit the path
+
+    # subset
+    # image_paths = image_paths[:10]
 
     # split the dataset
     train_images, validation_images, test_images, train_anno, validation_anno, test_anno = split_images_train_validation_test(image_paths, 

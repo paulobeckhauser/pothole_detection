@@ -23,7 +23,8 @@ def split_images_train_validation_test(image_paths, train_ratio=0.8, validation_
     - validation_images: List of image paths for the validation set.
     - test_images: List of image paths for the test set.
     """
-
+    # set random seed
+    random.seed(42)
     
     # Calculate the number of images for each set
     num_images = len(image_paths)
