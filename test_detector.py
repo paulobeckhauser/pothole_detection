@@ -113,7 +113,7 @@ class test_object_detection:
                 # Update tensors
                 for j in range(len(confidense)):
                     image_box_tensor.append(i)
-                    proposals_tensor = predicted_boxes[j].view(1, -1)
+                    proposals_tensor = predicted_boxes[j]
                     print(proposals_tensor)
                     proposals_list.append(proposals_tensor)
                     print(confidense[j])
