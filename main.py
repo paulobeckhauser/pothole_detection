@@ -89,7 +89,7 @@ def main():
     # ------------ TASK 5-8 ------------
     network = Network(size=128, num_channels=3, batch_size=64, out_channels=32).to(device)
     optimizer = torch.optim.Adam(network.parameters(), lr=0.001)
-    train_loader, val_loader = get_dataloaders(train_dir = 'data/train', val_dir='data/validation', batch_size=64, num_workers=4)
+    train_loader, val_loader = get_dataloaders(train_dir = 'data/train', val_dir='data/validation', batch_size=64, num_workers=4, transform=Transform)
     out_dict = trainer(network, optimizer, train_loader, val_loader, num_epochs=1, lr=0.001, device=device)
     plot_loss_accuracy(out_dict)
 

@@ -13,6 +13,12 @@ def iou(box1, box2):
     Compute the IoU between two boxes using PyTorch tensors.
     Each box is represented as [x_min, y_min, x_max, y_max].
     """
+    # make sure the boxes are PyTorch tensors and not numpy arrays
+    if not isinstance(box1, torch.Tensor):
+        box1 = torch.tensor(box1, dtype=torch.float32)
+    if not isinstance(box2, torch.Tensor):
+        box2 = torch.tensor(box2, dtype=torch.float32)
+        
     x1_inter = torch.max(box1[0], box2[0])
     y1_inter = torch.max(box1[1], box2[1])
     x2_inter = torch.min(box1[2], box2[2])

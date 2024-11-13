@@ -9,6 +9,7 @@ import numpy as np
 class test_object_detection:
 
     def __init__(self, test_files_path, network, search_method, ground_truth_boxes, convert_box, iou, NMS, iou_threshold=0.5, device='cpu'):
+        
         self.name = test_files_path
         self.network = network.to(device)
         self.search_method = search_method
@@ -32,7 +33,9 @@ class test_object_detection:
         return image, proposals, ground_truth_boxes
     
     def precision_recall(self, predicted_boxes, ground_truth_boxes, confidense, index_predicted, index_groundtruth, iou_threshold=0.5):
-        sorted_indices = torch.argsort(confidense, descending=True)
+        number_of_ground_truth_boxes = len(ground_truth_boxes)
+        sorted_indices = np.argsort(confidense)[::-1]
+        
         predicted_boxes = predicted_boxes[sorted_indices]
         index_predicted = index_predicted[sorted_indices]
 
@@ -45,15 +48,17 @@ class test_object_detection:
             image_index = index_predicted[i]
             mask = (index_groundtruth == image_index)
             # get ground truth boxes for the image
-            print(ground_truth_boxes.shape)
             ground_truth_boxes_image = ground_truth_boxes[mask]
-            print(ground_truth_boxes_image)
-            
-            for ground_truth_box in ground_truth_boxes_image:
+            # i want to know the indexes where mask is true
+            index_list = np.where(mask)
+
+            for j, ground_truth_box in enumerate(ground_truth_boxes_image):
                 iou = self.iou(predicted_box, ground_truth_box)
                 if iou > iou_threshold:
-                    # remove the ground truth box
-                    ground_truth_boxes.remove(ground_truth_box)
+                    # remove the ground truth box using numpy  
+                    index = index_list[j][0] 
+                    ground_truth_boxes = np.delete(ground_truth_boxes, index, axis=0)
+                    index_groundtruth = np.delete(index_groundtruth, index, axis=0)
                     true_positives[i] = 1
                     break
             false_positives[i] = 1 - true_positives[i]
@@ -62,7 +67,7 @@ class test_object_detection:
         true_pos = torch.cumsum(true_positives, dim=0)
         false_pos= torch.cumsum(false_positives, dim=0)
         precision = true_pos / (true_pos + false_pos)
-        recall = true_pos / len(ground_truth_boxes)
+        recall = true_pos / number_of_ground_truth_boxes
 
         return precision, recall
     
@@ -109,14 +114,11 @@ class test_object_detection:
                 
                 # Run NMS
                 predicted_boxes, confidense = self.NMS(proposals, confidense, iou_threshold=0.2)
-        
+            
                 # Update tensors
                 for j in range(len(confidense)):
                     image_box_tensor.append(i)
-                    proposals_tensor = predicted_boxes[j]
-                    print(proposals_tensor)
-                    proposals_list.append(proposals_tensor)
-                    print(confidense[j])
+                    proposals_list.append(predicted_boxes[j])
                     confidense_tensor.append(confidense[j])
                 
                 for j in range(len(ground_truth_boxes)):
@@ -127,7 +129,7 @@ class test_object_detection:
                 del cropped_images, outputs, confidense, predicted_boxes
             
             # Calculate precision and recall
-            precision, recall = self.precision_recall(proposals_list, ground_truth_boxes_list, confidense_tensor, image_box_tensor, ground_truth_boxes_image)
+            precision, recall = self.precision_recall(np.array(proposals_list), np.array(ground_truth_boxes_list), np.array(confidense_tensor), np.array(image_box_tensor), np.array(ground_truth_boxes_image))
             self.plot_precision_recall(precision, recall)
             AP = self.avarage_precision(precision, recall)
 
@@ -145,3 +147,6 @@ if __name__ == '__main__':
 
     average_precision = test_object_detection.avarage_precision(precision, recall)
     print(average_precision)
+
+    sorted_indices = np.argsort(np.array([1,12,2]))[::-1]
+    print(sorted_indices)

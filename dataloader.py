@@ -48,17 +48,11 @@ class PotholeDataset(Dataset):
 
         return image, label
     
-def get_dataloaders(train_dir, val_dir, batch_size=64, num_workers=4):
+def get_dataloaders(train_dir, val_dir, batch_size=64, num_workers=4, transform=None):
     # Define image transformations (augmentation for training, simple scaling for validation)
-    train_transform = transforms.Compose([
-        transforms.Resize((128, 128)),
-        transforms.ToTensor()
-    ])
+    train_transform = transform
 
-    val_transform = transforms.Compose([
-        transforms.Resize((128, 128)),
-        transforms.ToTensor()
-    ])
+    val_transform = transform
 
     # Create datasets
     train_dataset = PotholeDataset(root_dir=train_dir, transform=train_transform)

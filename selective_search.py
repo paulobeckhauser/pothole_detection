@@ -4,10 +4,11 @@ import torch
 
 
 class SelectiveSearch:
-    def __init__(self, input_folder, output_folder, resize_dim=(600, 600), mode='fast'):
+    def __init__(self, input_folder, output_folder, resize_dim=(600, 600), max_num_boxes = None, mode='fast'):
         self.input_folder = input_folder
         self.output_folder = output_folder
         self.resize_dim = resize_dim
+        self.max_num_boxes = max_num_boxes
         self.mode = mode.lower()
         os.makedirs(self.output_folder, exist_ok=True)
     
@@ -33,6 +34,8 @@ class SelectiveSearch:
         # Run Selective Search
         rects = ss.process()
         rects = torch.tensor(rects, dtype=torch.float32).to(device)
+        if self.max_num_boxes is not None:
+            rects = rects[:self.max_num_boxes]
         return image, rects
 
     def process_all_images(self, device):
