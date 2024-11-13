@@ -16,7 +16,8 @@ from torchvision import transforms
 
 
 def main():
-    os.chdir('pothole_detection')
+    # os.chdir('pothole_detection')
+    
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     Transform = transforms.Compose([
@@ -47,7 +48,7 @@ def main():
     groundtruth_bound_box = GroundTruthBoundingBoxes(name="Data Loader")
     SS = SelectiveSearch(input_folder='images', output_folder='ss_images',
                          resize_dim=(600, 600), mode='quality') # edit the path
-    '''
+    
     annotation_paths = glob.glob('images/*.xml') # list all xml files
     
     # MABO
@@ -84,8 +85,7 @@ def main():
                                                                                                                             save_path='results/train_validation_test.png') # edit the path 
 
     put_images_and_labels_in_folders(train_images, validation_images, train_anno, validation_anno, base_folder='data', GTBB = groundtruth_bound_box, bb = SS, limit=None)
-    '''
-    test_images = ['/work3/s214598/pothole_detection/images/img-1.jpg', '/work3/s214598/pothole_detection/images/img-2.jpg']
+
     # ------------ TASK 5-8 ------------
     network = Network(size=128, num_channels=3, batch_size=64, out_channels=32).to(device)
     optimizer = torch.optim.Adam(network.parameters(), lr=0.001)
