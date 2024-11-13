@@ -56,7 +56,7 @@ class test_object_detection:
                 iou = self.iou(predicted_box, ground_truth_box)
                 if iou > iou_threshold:
                     # remove the ground truth box using numpy  
-                    index = index_list[j][0] 
+                    index = index_list[0][j] 
                     ground_truth_boxes = np.delete(ground_truth_boxes, index, axis=0)
                     index_groundtruth = np.delete(index_groundtruth, index, axis=0)
                     true_positives[i] = 1

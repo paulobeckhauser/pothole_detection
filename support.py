@@ -69,54 +69,6 @@ def mean_average_best_overlap(ground_truth_boxes, generated_boxes):
     return mabo
 
 
-def calculate_mabo(annotation_paths, ground_truth_bound_box, proposal_method, device, max_runs=None, do_plotting=False):
-    """ Calculate MABO for all images in the dataset """
-
-    num_boxes_list_list = [] # Yes, that is the variable name that I chose. Sorry.
-    mabo_scores_list = []
-    for i,path in enumerate(annotation_paths):
-        gt_bb = ground_truth_bound_box.parse_annotation(path)
-        image, proposals = proposal_method.create_proposals(path.replace('.xml', '.jpg'), device)
-        # mabo_score = mean_average_best_overlap(gt_bb, proposals)
-
-        # Calculate ABO
-        num_boxes_list, mabo_scores = calculate_abo(ground_truth_boxes=gt_bb, 
-                                                    proposals=proposals, 
-                                                    step=100)
-        num_boxes_list_list.append(num_boxes_list)
-        mabo_scores_list.append(mabo_scores)
-        
-        print("Plotted", len(num_boxes_list_list), "images")
-
-        if max_runs!=None and i==max_runs:
-            break
-
-    # Sane check
-    for i in range(len(num_boxes_list_list)-1):
-        if len(num_boxes_list_list[i]) != len(num_boxes_list_list[i+1]):
-            print("num_boxes_list_list elements are not the same")
-        
-    # Calculate the mean MABO scores
-    mabo_scores_list = np.array(mabo_scores_list)
-    mabo_scores = np.mean(mabo_scores_list, axis=0) # mean over images for same number of boxes
-    print("mabo_scores", mabo_scores)
-    print("num_boxes_list", num_boxes_list_list[0])
-
-    if do_plotting:
-        # Plotting
-        plt.figure(figsize=(10, 6))
-        plt.plot(num_boxes_list_list[0], mabo_scores, label='Selective Search', color='red')
-        plt.xlabel("Number of Object Boxes")
-        plt.ylabel("Mean Average Best Overlap (MABO)")
-        plt.title("MABO vs. Number of Object Boxes")
-        plt.grid(True)
-        plt.legend()
-        plt.savefig('results/mabo_vs_boxes.png')
-        plt.show()
-
-    return num_boxes_list_list[0], mabo_scores       
-
-
 def calculate_abo(ground_truth_boxes, proposals, step=100):
     """ Calculate ABO (1 image) for varying number of proposals """
 
@@ -139,5 +91,56 @@ def calculate_abo(ground_truth_boxes, proposals, step=100):
 
     return num_boxes_list, mabo_scores
 
-    
 
+def calculate_mabo(annotation_paths, ground_truth_bound_box, proposal_method, device, max_runs=None, do_plotting=False):
+    """ Calculate MABO for all images in the dataset """
+
+    num_boxes_list_list = [] # Yes, that is the variable name that I chose. Sorry.
+    mabo_scores_list = []
+    for i,path in enumerate(annotation_paths):
+        gt_bb = ground_truth_bound_box.parse_annotation(path)
+        image, proposals = proposal_method.create_proposals(path.replace('.xml', '.jpg'), device)
+        # mabo_score = mean_average_best_overlap(gt_bb, proposals)
+
+        # Calculate ABO
+        num_boxes_list, mabo_scores = calculate_abo(ground_truth_boxes=gt_bb, 
+                                                    proposals=proposals, 
+                                                    step=100)
+        num_boxes_list_list.append(num_boxes_list)
+        mabo_scores_list.append(mabo_scores)
+        
+        print("Plotted", len(num_boxes_list_list), "images")
+
+        if max_runs!=None and i==max_runs:
+            break
+
+    print("mabo_scores", mabo_scores_list)
+    print("num_boxes_list", num_boxes_list_list[0])
+
+    # Truncate the lists to the minimum number of boxes
+    least_num_steps = min([len(num_boxes) for num_boxes in num_boxes_list_list])
+    num_boxes_list_list = [num_boxes[:least_num_steps] for num_boxes in num_boxes_list_list]
+    mabo_scores_list = [mabo_scores[:least_num_steps] for mabo_scores in mabo_scores_list]
+
+    # Saninty check
+    for i in range(len(num_boxes_list_list)-1):
+        if len(num_boxes_list_list[i]) != len(num_boxes_list_list[i+1]):
+            print("num_boxes_list_list elements are not the same")
+    
+    # Calculate the mean MABO scores
+    mabo_scores_list = np.array(mabo_scores_list)
+    mabo_scores = np.mean(mabo_scores_list, axis=0) # mean over images for same number of boxes    
+
+    if do_plotting:
+        # Plotting
+        plt.figure(figsize=(10, 6))
+        plt.plot(num_boxes_list_list[0], mabo_scores, label='Selective Search', color='red')
+        plt.xlabel("Number of Object Boxes")
+        plt.ylabel("Mean Average Best Overlap (MABO)")
+        plt.title("MABO vs. Number of Object Boxes")
+        plt.grid(True)
+        plt.legend()
+        plt.savefig(f'results/mabo_vs_boxes_{max_runs}.png')
+        plt.show()
+
+    return num_boxes_list_list[0], mabo_scores        
