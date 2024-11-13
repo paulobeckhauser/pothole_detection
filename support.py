@@ -3,6 +3,7 @@ import cv2
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+import glob
 
 def convert_boxes(rects):
     return [(x, y, x + w, y + h) for (x, y, w, h) in rects]
@@ -61,33 +62,76 @@ def mean_average_best_overlap(ground_truth_boxes, generated_boxes):
     mabo = torch.mean(best_ious)
     return mabo
 
-# Main function to calculate and plot MABO vs Number of Boxes
-def plot_mabo_vs_boxes(ground_truth_boxes, rects, save_path='/work3/s214598/mabo_vs_boxes.png'):
-    step = 100
+
+def calculate_mabo(annotation_paths, ground_truth_bound_box, proposal_method, device, max_runs=None, do_plotting=False):
+    """ Calculate MABO for all images in the dataset """
+
+    num_boxes_list_list = [] # Yes, that is the variable name that I chose. Sorry.
+    mabo_scores_list = []
+    for i,path in enumerate(annotation_paths):
+        gt_bb = ground_truth_bound_box.parse_annotation(path)
+        image, proposals = proposal_method.create_proposals(path.replace('.xml', '.jpg'), device)
+        # mabo_score = mean_average_best_overlap(gt_bb, proposals)
+
+        # Calculate ABO
+        num_boxes_list, mabo_scores = calculate_abo(ground_truth_boxes=gt_bb, 
+                                                    proposals=proposals, 
+                                                    step=100)
+        num_boxes_list_list.append(num_boxes_list)
+        mabo_scores_list.append(mabo_scores)
+        
+        print("Plotted", len(num_boxes_list_list), "images")
+
+        if max_runs!=None and i==max_runs:
+            break
+
+    # Sane check
+    for i in range(len(num_boxes_list_list)-1):
+        if len(num_boxes_list_list[i]) != len(num_boxes_list_list[i+1]):
+            print("num_boxes_list_list elements are not the same")
+        
+    # Calculate the mean MABO scores
+    mabo_scores_list = np.array(mabo_scores_list)
+    mabo_scores = np.mean(mabo_scores_list, axis=0) # mean over images for same number of boxes
+    print("mabo_scores", mabo_scores)
+    print("num_boxes_list", num_boxes_list_list[0])
+
+    if do_plotting:
+        # Plotting
+        plt.figure(figsize=(10, 6))
+        plt.plot(num_boxes_list_list[0], mabo_scores, label='Selective Search', color='red')
+        plt.xlabel("Number of Object Boxes")
+        plt.ylabel("Mean Average Best Overlap (MABO)")
+        plt.title("MABO vs. Number of Object Boxes")
+        plt.grid(True)
+        plt.legend()
+        plt.savefig('results/mabo_vs_boxes.png')
+        plt.show()
+
+    return num_boxes_list_list[0], mabo_scores       
+
+
+def calculate_abo(ground_truth_boxes, proposals, step=100):
+    """ Calculate ABO (1 image) for varying number of proposals """
+
     # Convert ground truth boxes to tensors
     ground_truth_tensor = torch.tensor(ground_truth_boxes, dtype=torch.float32).cpu()
     
-    num_boxes_list = np.arange(100, min(3000+step, len(rects)+step), step)
-    mabo_scores = []
+    num_boxes_list = np.arange(100, min(3000+step, len(proposals)+step), step)
 
     # Calculate MABO for different numbers of proposals
+    mabo_scores = []
     for num_boxes in num_boxes_list:
-        selected_boxes = rects[:num_boxes]
+        selected_boxes = proposals[:num_boxes]
         mabo = mean_average_best_overlap(ground_truth_tensor, selected_boxes)
         mabo_scores.append(mabo)
+        print("num boxes:", num_boxes, "mabo:", mabo)
     
     # Convert lists to NumPy arrays for plotting
     num_boxes_list = np.array(num_boxes_list)
     mabo_scores = np.array([mabo.cpu().numpy() if isinstance(mabo, torch.Tensor) else mabo for mabo in mabo_scores])
 
-    # Plotting
-    plt.figure(figsize=(10, 6))
-    plt.plot(num_boxes_list, mabo_scores, label='Selective Search', color='red')
-    plt.xlabel("Number of Object Boxes")
-    plt.ylabel("Mean Average Best Overlap (MABO)")
-    plt.title("MABO vs. Number of Object Boxes")
-    plt.grid(True)
-    plt.legend()
-    plt.savefig(save_path)
-    plt.show()
+    return num_boxes_list, mabo_scores
+
+    
 
