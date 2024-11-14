@@ -114,7 +114,8 @@ class test_object_detection:
                 confidense = outputs[:, 0]
                 
                 # Run NMS
-                predicted_boxes, confidense = self.NMS(proposals, confidense, iou_threshold=0.2)
+                print(image_path)
+                predicted_boxes, confidense = self.NMS(proposals, confidense, iou_threshold=0.2, image_path=image_path)
             
                 # Update tensors
                 for j in range(len(confidense)):
