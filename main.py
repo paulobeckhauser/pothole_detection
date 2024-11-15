@@ -4,6 +4,7 @@ import os
 import cv2
 import xml.etree.ElementTree as ET
 import re
+import torch
 
 def resize_bounding_boxes(bounding_boxes, original_size, new_size):
     x_scale = new_size[0] / original_size[0]
@@ -92,33 +93,28 @@ def resize_bounding_boxes(bounding_boxes, original_size, new_size):
         resized_boxes.append((xmin_resized, ymin_resized, xmax_resized, ymax_resized))
     return resized_boxes
 
-def count_xml_files(folder_path):
-    """
-    Count the number of .xml files in a folder.
 
-    Parameters:
-    folder_path (str): Path to the folder.
-
-    Returns:
-    int: Number of .xml files in the folder.
-    """
-    xml_files = [f for f in os.listdir(folder_path) if f.lower().endswith('.xml')]
-    return len(xml_files)
-
-def extract_number_from_string(s):
-    match = re.search(r'\d+', s)
-    if match:
-        return int(match.group())
-    return None
 
 def main():
 
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"Using device: {device}")
+
     # ------------ TASK 1 ------------
-    # gt_bound_box = GroundTruthBoundingBoxes(name="Data Loader")
-    # gt_bound_box.load_dataset(data_folder='images', output_folder = 'bounding_boxes_images')
+    gt_bound_box = GroundTruthBoundingBoxes(name="Data Loader")
+    gt_bound_box.load_dataset(data_folder='images', output_folder = 'bounding_boxes_images')
+
+        # Iterate over all images in the ground truth folder
+    for filename in os.listdir(ground_truth_folder):
+        if filename.lower().endswith(('.jpg', 'jpeg', '.png')):  # Filter for image files
+            image_path = os.path.join(ground_truth_folder, filename)
+            image = cv2.imread(image_path)
+            if image is not None:
+                height, width, channels = image.shape
+                print(f"Image: {filename}, Size: {width}x{height}")
 
     # # ------------ TASK 2 ------------
-    # # Selective Search
+    # Selective Search
     # resize_dim = (400, 400)
     # nb_boxes_list = [5, 10, 20, 50, 100, 200, 500, 100, 1500, 2000, 2500, 3000]
     # selective_search = SelectiveSearch(input_folder='images', output_folder='ss_images', resize_dim=resize_dim, mode='fast')

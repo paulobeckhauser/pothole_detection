@@ -6,3 +6,6 @@ __pycache__/*
 bounding_boxes_images/*
 rm_outputs.sh
 ss_images/
+mabo_results.txt
+plot.png
+sorted_mabo_results.txt
